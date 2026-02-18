@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADVOCATE SAJID ALI KHAN | Legal Services</title>
+<!-- Firebase SDKs -->
+<script type="module">
+  // Import the functions you need from the SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.3.0/firebase-firestore.js";
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyAQtVo3vJ5k5VFEJqoiInrdR5H5Sh9EGS0",
+    authDomain: "sajid-legal-platform.firebaseapp.com",
+    projectId: "sajid-legal-platform",
+    storageBucket: "sajid-legal-platform.firebasestorage.app",
+    messagingSenderId: "736024932669",
+    appId: "1:736024932669:web:65b2e8537cd7f5c3ce5554"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db = getFirestore();
+
+  // DOM Elements
+  const registerForm = document.getElementById('registerForm');
+  const loginForm = document.getElementById('loginForm');
+  const orderForm = document.getElementById('orderForm');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const adminPanel = document.getElementById('adminPanel');
+  const clientDashboard = document.getElementById('clientDashboard');
+  const paymentSection = document.getElementById('paymentSection');
+  const ordersList = document.getElementById('ordersList');
+
+  // REGISTER CLIENT
+  registerForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = registerForm.email.value;
+    const password = registerForm.password.value;
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      alert('Registration successful! Please login.');
+      registerForm.reset();
+    } catch (err) { alert(err.message); }
+  });
+
+  // LOGIN CLIENT / ADMIN
+  loginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = loginForm.email.value;
+    const password = loginForm.password.value;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userEmail = userCredential.user.email;
+      if(userEmail === "bnbinance21@gmail.com"){ // Admin check
+        adminPanel.style.display = "block";
+        clientDashboard.style.display = "none";
+        loadOrders();
+      } else {
+        clientDashboard.style.display = "block";
+        adminPanel.style.display = "none";
+      }
+      loginForm.style.display = "none";
+      registerForm.style.display = "none";
+    } catch (err) { alert(err.message); }
+  });
+
+  // LOGOUT
+  logoutBtn?.addEventListener('click', () => {
+    signOut(auth).then(() => location.reload());
+  });
+
+  // PLACE ORDER
+  orderForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+      name: orderForm.name.value,
+      email: orderForm.email.value,
+      service: orderForm.service.value,
+      description: orderForm.description.value,
+      paymentProof: "",
+      status: "Pending",
+      videoLink: ""
+    };
+    await addDoc(collection(db, "orders"), data);
+    alert('Order submitted! Please upload payment screenshot.');
+    orderForm.reset();
+    paymentSection.style.display = "block";
+  });
+
+  // LOAD ORDERS FOR ADMIN
+  async function loadOrders(){
+    ordersList.innerHTML = '';
+    const querySnapshot = await getDocs(collection(db, "orders"));
+    querySnapshot.forEach((docSnap) => {
+      const order = docSnap.data();
+      const orderItem = document.createElement('div');
+      orderItem.className = 'card';
+      orderItem.innerHTML = `
+        <h4>${order.name} (${order.email})</h4>
+        <p>Service: ${order.service}</p>
+        <p>Status: ${order.status}</p>
+        <p>Description: ${order.description}</p>
+        <p>Payment Proof: ${order.paymentProof || 'Not uploaded'}</p>
+        <p>Video Link: ${order.videoLink || 'Not assigned'}</p>
+        <button onclick="updateStatus('${docSnap.id}')">Mark as Paid</button>
+        <button onclick="assignVideoLink('${docSnap.id}')">Assign Video Link</button>
+      `;
+      ordersList.appendChild(orderItem);
+    });
+  }
+
+  // UPDATE ORDER STATUS
+  window.updateStatus = async (id) => {
+    const docRef = doc(db, "orders", id);
+    await updateDoc(docRef, { status: "Paid" });
+    loadOrders();
+  }
+
+  // ASSIGN VIDEO LINK
+  window.assignVideoLink = async (id) => {
+    const link = prompt("Enter Google Meet / Zoom Link");
+    if(link){
+      const docRef = doc(db, "orders", id);
+      await updateDoc(docRef, { videoLink: link });
+      loadOrders();
+    }
+  }
+
+</script>
+
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#1a1a1a;color:#f5f5f5;}
+header{background:#000;color:#f5c518;padding:20px;text-align:center;}
+header h1{margin:0;font-size:2em;}
+section{padding:30px 20px;text-align:center;}
+input, select, textarea{width:100%;padding:10px;margin:10px 0;border-radius:5px;border:none;}
+button{padding:10px 20px;margin:5px;background:#f5c518;color:#000;border:none;border-radius:5px;cursor:pointer;}
+button:hover{background:#fff;color:#000;}
+.card{background:#222;padding:15px;margin:10px;border-radius:10px;text-align:left;}
+form{max-width:500px;margin:auto;}
+#adminPanel, #clientDashboard, #paymentSection{display:none;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>ADVOCATE SAJID ALI KHAN</h1>
+<p>Criminal | Civil | Property | Family | Contract & Procurement Law</p>
+<p>Mingora Swat & Peshawar | WhatsApp: +923127593981</p>
+</header>
+
+<section id="registerSection">
+<h2>Client Registration</h2>
+<form id="registerForm">
+<input type="email" name="email" placeholder="Email" required>
+<input type="password" name="password" placeholder="Password" required>
+<button type="submit">Register</button>
+</form>
+</section>
+
+<section id="loginSection">
+<h2>Login</h2>
+<form id="loginForm">
+<input type="email" name="email" placeholder="Email" required>
+<input type="password" name="password" placeholder="Password" required>
+<button type="submit">Login</button>
+</form>
+</section>
+
+<section id="clientDashboard">
+<h2>Client Dashboard</h2>
+<button id="logoutBtn">Logout</button>
+<h3>Place New Order</h3>
+<form id="orderForm">
+<input type="text" name="name" placeholder="Full Name" required>
+<input type="email" name="email" placeholder="Email" required>
+<select name="service" required>
+<option value="">Select Service</option>
+<option>Criminal Draft</option>
+<option>Civil Draft</option>
+<option>Property Draft</option>
+<option>Family Draft</option>
+<option>Contract Draft</option>
+</select>
+<textarea name="description" placeholder="Describe your case..." required></textarea>
+<button type="submit">Submit Order</button>
+</form>
+
+<div id="paymentSection">
+<h3>Payment Instructions</h3>
+<p><strong>JazzCash:</strong> 03488149273</p>
+<p><strong>Easypaisa / Nayapay:</strong> +923127593981</p>
+<p><strong>USDT (BEP20):</strong> 0x3c068ae9e0eb8cd316e562f5d85949a9d37f441a</p>
+<p>After payment, send screenshot on WhatsApp:</p>
+<a href="https://wa.me/923127593981" target="_blank"><button>Send Payment Proof on WhatsApp</button></a>
+</div>
+</section>
+
+<section id="adminPanel">
+<h2>Admin Panel (Mobile & Desktop)</h2>
+<button id="logoutBtn">Logout</button>
+<div id="ordersList"></div>
+</section>
+
+<footer>
+<p>© 2026 ADVOCATE SAJID ALI KHAN | All Rights Reserved</p>
+</footer>
+
+</body>
+</html>
